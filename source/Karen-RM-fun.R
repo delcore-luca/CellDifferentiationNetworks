@@ -124,7 +124,7 @@ get.Y.ID <- function(macaqueID, topClones){
   Y <- Y_rescaled
   Y <- Y[,,names(which(apply(Y!=0, 3, sum) != 0))]
   # topClones <- dim(Y)[3] # 1000
-  Y <- Y[,,names(head(sort(apply(Y!=0, 3, sum), decreasing = T), topClones))]
+  Y <- Y[,,names(head(sort(apply(Y!=0, 3, sum), decreasing = T), topClones)),drop=FALSE]
 
   return(Y)
 }

@@ -2,17 +2,7 @@ cat("\nInstall/load packages")
 inst.pkgs <- installed.packages()
 
 ## required packages:
-l.pkgs <- c("expm",
-            "Matrix",
-            "parallel",
-            "gaussquad",
-            "splines",
-            "scales",
-            "mvtnorm",
-            "tmvtnorm",
-            "MASS",
-            "igraph",
-            "devtools")
+l.pkgs <- c("Karen")
 ## check if packages are installed
 lapply(l.pkgs, function(pkg){
   if(!(pkg %in% rownames(inst.pkgs))){
@@ -61,7 +51,7 @@ nModels <- length(model.lst)
 
 topClones <- 1000
 Y <- get.Y(macaqueID, topClones = topClones)
-Y <- Y[,,names(head(sort(apply(Y!=0, 3, sum), decreasing = T), topClones))]
+Y <- Y[,,names(head(sort(apply(Y!=0, 3, sum), decreasing = T), topClones)),drop=FALSE]
 cat(paste("n. of clones: ", dim(Y)[3], "\n", sep = ""))
 
 nMod <- as.numeric(macaqueID_mod[2])
@@ -78,7 +68,7 @@ cat(paste("\tLoading CPU cluster...\n", sep = ""))
 cat(paste("Cluster type: ", "PSOCK\n", sep = ""))
 cpu <- Sys.getenv("SLURM_CPUS_ON_NODE", nProc)
 hosts <- rep("localhost",cpu)
-cl <- makeCluster(hosts, type = "PSOCK")
+cl <- parallel::makeCluster(hosts, type = "PSOCK")
 rm(nProc)
 
 ## CDN parameters:
@@ -97,7 +87,7 @@ X0["HSC"] <- 1
 ## mean vector and covariance matrix of X0:
 m_0 <- replicate(dim(Y0)[3], X0, simplify = "array")
 colnames(m_0) <- dimnames(Y0)[[3]]
-P_0 <- Diagonal(length(ctps) * dim(Y0)[3], 1e-5)
+P_0 <- Matrix::Diagonal(length(ctps) * dim(Y0)[3], 1e-5)
 rownames(P_0) <- colnames(P_0) <- rep(dimnames(Y0)[[3]], each = length(ctps))
 
 ## fit Karen on data:
@@ -117,10 +107,11 @@ res.fit <- get.fit(rct.lst = rcts,
                         maxit = 1000,
                         maxitEM = 10,
                         trace = 1,
+                        verbose = TRUE,
                         FORCEP = TRUE))
 
 ## stop cluster and save results:
-stopCluster(cl)
+parallel::stopCluster(cl)
 save.image(paste(currResPath, "/rhesusMacaqueID_", macaqueID, "_Model", nMod, "_output.Rdata", sep = ""))
 
 ## define color legend for cell types:
@@ -130,7 +121,7 @@ names(cell.cols) <- c("HSC", "P1", "P2", "P3", "T", "B", "NK", "G", "M")
 ## plot smoothing moments:
 nCL <- dim(Y0)[3]
 pdf(file = paste(currResPath, "/rhesusMacaqueID_", macaqueID, "_Model", nMod, "_sMoments.pdf", sep = ""), width = 7*ceiling(nCL/ceiling(sqrt(nCL))), height = 3*ceiling(sqrt(nCL)))
-par(mar = c(5,5,2,2), mfrow = c(ceiling(nCL/ceiling(sqrt(nCL))),ceiling(sqrt(nCL))))
+par(mar = c(5,5,2,2), mfrow = c(ceiling(sqrt(nCL)), ifelse(ceiling(sqrt(nCL)) == 1, ceiling(sqrt(nCL)) + 1, ceiling(sqrt(nCL)))))
 get.sMoments(res.fit = res.fit, cell.cols = cell.cols)
 dev.off()
 
@@ -140,16 +131,16 @@ par(mar = c(5,5,2,2), mfrow = c(1,1))
 get.sMoments.avg(res.fit = res.fit, cell.cols = cell.cols)
 dev.off()
 
-## load igraphhack functions:
-source_url("https://raw.githubusercontent.com/jevansbio/igraphhack/master/igraphplot2.R")
-environment(plot.igraph2) <- asNamespace('igraph')
-environment(igraph.Arrows2) <- asNamespace('igraph')
+# ## load igraphhack functions:
+# source_url("https://raw.githubusercontent.com/jevansbio/igraphhack/master/igraphplot2.R")
+# environment(plot.igraph2) <- asNamespace('igraph')
+# environment(igraph.Arrows2) <- asNamespace('igraph')
 
 ## plot cell differentiation network:
-legend_image <- as.raster(matrix(colorRampPalette(c("lightgray", "red", "black"))(99), ncol=1))
+legend_image <- grDevices::as.raster(matrix(grDevices::colorRampPalette(c("lightgray", "red", "black"))(99), ncol=1))
 pdf(file = paste(currResPath, "/rhesusMacaqueID_",macaqueID, "_Model", nMod, "diffNet.pdf", sep = ""), width = 5, height = 5)
 layout(mat = matrix(c(1,1,1,2), ncol = 1))
-par(mar = c(0,0,3,0))
+par(mar = c(1,0,3,0))
 get.cdn(res.fit = res.fit,
         edges.lab = F,
         cell.cols = cell.cols)
@@ -164,17 +155,17 @@ Y_NA <- Y
 Y_NA[Y_NA == 0] <- NA
 
 pdf(file = paste(currResPath, "/rhesusMacaqueID_",macaqueID, "data.pdf", sep = ""), width = 7, height = 5)
-par(mar = c(5,5,2,2))
+par(mar = c(5,5,2,2), mfrow = c(1,1))
 matplot(as.numeric(rownames(Y)), log(Y_NA[,,1]),
         lty = 1, pch = 20,
-        col = alpha(cell.cols[colnames(Y_NA)], alpha = .2),
+        col = scales::alpha(cell.cols[colnames(Y_NA)], alpha = .2),
         cex = 3, lwd = 3,
         ylim = range(c(log(Y_NA)), na.rm = T), type = 'b',
         cex.axis = 2, cex.lab = 2, ylab = expression(logY[t]), xlab = "time (months)")
 lapply(1:dim(Y)[3], function(cl){
   matplot(as.numeric(rownames(Y[,,cl])), log(Y_NA[,,cl]),
           type = "b", lty = 1, pch = 20, add = T,
-          col = alpha(cell.cols[colnames(Y_NA)], alpha = .2), cex = 2, lwd = 3)
+          col = scales::alpha(cell.cols[colnames(Y_NA)], alpha = .2), cex = 2, lwd = 3)
 })
 matplot(as.numeric(rownames(Y)), apply(log(Y_NA), c(1,2), mean, na.rm = T), type = 'b', pch = 20, lty = 1,
         col = cell.cols[colnames(Y_NA)], add = T, lwd = 10)

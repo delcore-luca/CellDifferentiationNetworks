@@ -115,7 +115,7 @@ res.fit <- get.fit(rct.lst = rcts,
                         FORCEP = TRUE))
 
 ## stop cluster and save results:
-stopCluster(cl)
+parallel::stopCluster(cl)
 save.image(paste(currResPath, "/clinicalTrial_", CT, "_Model", nMod, "_output.Rdata", sep = ""))
 
 ## define color legend for cell types:
@@ -125,7 +125,7 @@ names(cell.cols) <- c("HSC", "P1", "P2", "P3", "T", "B", "NK", "G", "M")
 ## plot smoothing moments:
 nCL <- dim(Y0)[3]
 pdf(file = paste(currResPath, "/clinicalTrial_", CT, "_Model", nMod, "_sMoments.pdf", sep = ""), width = 7*ceiling(nCL/ceiling(sqrt(nCL))), height = 3*ceiling(sqrt(nCL)))
-par(mar = c(5,5,2,2), mfrow = c(ceiling(nCL/ceiling(sqrt(nCL))),ceiling(sqrt(nCL))))
+par(mar = c(5,5,2,2), mfrow = c(ceiling(sqrt(nCL)), ifelse(ceiling(sqrt(nCL)) == 1, ceiling(sqrt(nCL)) + 1, ceiling(sqrt(nCL)))))
 get.sMoments(res.fit = res.fit, cell.cols = cell.cols)
 dev.off()
 
@@ -135,16 +135,16 @@ par(mar = c(5,5,2,2), mfrow = c(1,1))
 get.sMoments.avg(res.fit = res.fit, cell.cols = cell.cols)
 dev.off()
 
-## load igraphhack functions:
-source_url("https://raw.githubusercontent.com/jevansbio/igraphhack/master/igraphplot2.R")
-environment(plot.igraph2) <- asNamespace('igraph')
-environment(igraph.Arrows2) <- asNamespace('igraph')
+# ## load igraphhack functions:
+# source_url("https://raw.githubusercontent.com/jevansbio/igraphhack/master/igraphplot2.R")
+# environment(plot.igraph2) <- asNamespace('igraph')
+# environment(igraph.Arrows2) <- asNamespace('igraph')
 
 ## plot cell differentiation network:
-legend_image <- as.raster(matrix(colorRampPalette(c("lightgray", "red", "black"))(99), ncol=1))
+legend_image <- grDevices::as.raster(matrix(grDevices::colorRampPalette(c("lightgray", "red", "black"))(99), ncol=1))
 pdf(file = paste(currResPath, "/clinicalTrial_",CT, "_Model", nMod, "diffNet.pdf", sep = ""), width = 10, height = 10)
 layout(mat = matrix(c(1,1,1,2), ncol = 1))
-par(mar = c(0,0,3,0))
+par(mar = c(1,0,3,0))
 get.cdn(res.fit = res.fit,
         edges.lab = F,
         cell.cols = cell.cols)
@@ -159,7 +159,7 @@ Y_NA <- Y
 Y_NA[Y_NA == 0] <- NA
 
 pdf(file = paste(currResPath, "/clinicalTrial_",CT, "data.pdf", sep = ""), width = 7, height = 5)
-par(mar = c(5,5,2,2))
+par(mar = c(5,5,2,2), mfrow = c(1,1))
 matplot(as.numeric(rownames(Y)), log(Y_NA[,,1]),
         lty = 1, pch = 20,
         col = alpha(cell.cols[colnames(Y_NA)], alpha = .2),
