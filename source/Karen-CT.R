@@ -1,34 +1,9 @@
-cat("\nInstall/load packages")
-inst.pkgs <- installed.packages()
-
-## required packages:
-l.pkgs <- c("expm",
-            "Matrix",
-            "parallel",
-            "gaussquad",
-            "splines",
-            "scales",
-            "mvtnorm",
-            "tmvtnorm",
-            "MASS",
-            "igraph",
-            "devtools")
-## check if packages are installed
-lapply(l.pkgs, function(pkg){
-  if(!(pkg %in% rownames(inst.pkgs))){
-    install.packages(pkg)
-  }
-})
-
-lapply(l.pkgs, function(pkg){library(pkg,character.only=TRUE)})
-
-if(!("Karen" %in% rownames(inst.pkgs))){
-  install_github("delcore-luca/Karen",
-                 ref = "master")
-}
 library(Karen)
-
-rm(list = ls())
+library(gaussquad)
+library(scales)
+library(igraph)
+library(parallel)
+library(Matrix)
 
 source("./source/Karen-CT-fun.R")
 
@@ -54,7 +29,6 @@ ifelse(!dir.exists(file.path(currResPath)), dir.create(file.path(currResPath)), 
 
 dataDir <- "./input/02-Data/Sixetal/"
 CT_mod <- as.vector(unlist(strsplit(commandArgs(trailingOnly = TRUE), split = "-", fixed = TRUE)))
-# CT_mod <- as.vector(unlist(strsplit("WAS-2", split = "-", fixed = TRUE)))
 CT <- CT_mod[1]
 
 model.lst <- get.modelList()
@@ -68,13 +42,7 @@ rm(Y)
 cat(paste("Clinical Trial: ", CT, "\t Model n. ", nMod, "\n", sep = ""))
 
 ## cluster parameters:
-nProc <- 8
-cat(paste("\tLoading CPU cluster...\n", sep = ""))
-cat(paste("Cluster type: ", "PSOCK\n", sep = ""))
-cpu <- Sys.getenv("SLURM_CPUS_ON_NODE", nProc)
-hosts <- rep("localhost",cpu)
-cl <- makeCluster(hosts, type = "PSOCK")
-rm(nProc)
+cl <- parallel::makeCluster(8, type = "FORK")
 
 ## CDN parameters:
 rcts <- as.vector(unlist(model.lst[[nMod]]["rct.lst"]))
@@ -87,13 +55,17 @@ ctps <- unique(setdiff(c(sapply(rcts, function(r){
 ## initial condition:
 X0 <- rep(0, length(ctps))
 names(X0) <- ctps
-X0["HSC"] <- 1
+X0[intersect(names(X0), c("HSC", "MPP", "CMP", "NKP", "CLP", "CMLP"))] <- 1
 
 ## mean vector and covariance matrix of X0:
 m_0 <- replicate(dim(Y0)[3], X0, simplify = "array")
 colnames(m_0) <- dimnames(Y0)[[3]]
 P_0 <- Diagonal(length(ctps) * dim(Y0)[3], 1e-5)
 rownames(P_0) <- colnames(P_0) <- rep(dimnames(Y0)[[3]], each = length(ctps))
+
+LMM <- 25
+RELERR <- 1e-6
+nItEM <- 25
 
 ## fit Karen on data:
 res.fit <- get.fit(rct.lst = rcts,
@@ -105,13 +77,14 @@ res.fit <- get.fit(rct.lst = rcts,
                    P0 = P_0,
                    cl = cl,
                    list(nLQR = 3,
-                        lmm = 25,
+                        lmm = LMM,
                         pgtol = 0,
-                        relErrfct = 1e-5,
-                        tol = 1e-9,
+                        relErrfct = RELERR,
+                        tol = 1e-5,
                         maxit = 1000,
-                        maxitEM = 10,
+                        maxitEM = nItEM,
                         trace = 1,
+                        verbose = TRUE,
                         FORCEP = TRUE))
 
 ## stop cluster and save results:
@@ -119,8 +92,10 @@ parallel::stopCluster(cl)
 save.image(paste(currResPath, "/clinicalTrial_", CT, "_Model", nMod, "_output.Rdata", sep = ""))
 
 ## define color legend for cell types:
-cell.cols <-  c("#1F77B4", "#FF7F0E", "#2CA02C", "#E7B928", "#D62728", "#9467BD", "#8C564B", "#E377C2", "#7F7F7F")
-names(cell.cols) <- c("HSC", "P1", "P2", "P3", "T", "B", "NK", "G", "M")
+cell.cols <-  c("#DBC9D8", "#7EEB4F", "#726562", "#7CE6CB", "#8FDD8A", "#D556D2", "#8294D9", "#D6DFB6", "#DE687A", "#76908A", "#D6A165", "#DBE261",
+                "#89D3E4", "#D492D4", "#7A50E1")
+names(cell.cols) <- c("HSC", "MPP", "CMLP", "CMP", "NKP", "CLP", "MEP", "GMP", "P", "ERY", "G", "M", "NK", "T", "B")
+cell.cols <- cell.cols[ctps]
 
 ## plot smoothing moments:
 nCL <- dim(Y0)[3]
@@ -135,19 +110,16 @@ par(mar = c(5,5,2,2), mfrow = c(1,1))
 get.sMoments.avg(res.fit = res.fit, cell.cols = cell.cols)
 dev.off()
 
-# ## load igraphhack functions:
-# source_url("https://raw.githubusercontent.com/jevansbio/igraphhack/master/igraphplot2.R")
-# environment(plot.igraph2) <- asNamespace('igraph')
-# environment(igraph.Arrows2) <- asNamespace('igraph')
-
 ## plot cell differentiation network:
 legend_image <- grDevices::as.raster(matrix(grDevices::colorRampPalette(c("lightgray", "red", "black"))(99), ncol=1))
-pdf(file = paste(currResPath, "/clinicalTrial_",CT, "_Model", nMod, "diffNet.pdf", sep = ""), width = 10, height = 10)
+pdf(file = paste(currResPath, "/clinicalTrial_",CT, "_Model", nMod, "diffNet.pdf", sep = ""), width = 6.5, height = 6.5)
 layout(mat = matrix(c(1,1,1,2), ncol = 1))
 par(mar = c(1,0,3,0))
-get.cdn(res.fit = res.fit,
-        edges.lab = F,
-        cell.cols = cell.cols)
+get.cdn2(res.fit = res.fit,
+         edges.lab = F,
+         cell.cols = cell.cols,
+         AIC = TRUE,
+         modelStructure = nMod)
 plot(c(0,1),c(-1,1),type = 'n', axes = F,xlab = '', ylab = '')
 text(x=seq(0,1,l=5), y = -.2, labels = seq(0,1,l=5), cex = 2, font = 2)
 rasterImage(t(legend_image), 0, 0, 1, 1)
