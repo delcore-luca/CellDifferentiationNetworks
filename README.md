@@ -17,7 +17,7 @@ To reproduce the figures and findings of our paper, it is sufficient to run all 
 sbatch ./FILE_NAME.sh
 ```
 
-The R code can be found in the *source* folder of the *master* branch. To reproduce the results reported in the paper it is sufficient to run all the *.sh* files of the *master* branch. The syntax of the sh file names is explained as follows.
+The syntax of the sh file names is explained as follows.
 
 	▪	Karen-C1_x-y-z-n —> runs the comparative study 1 with measurement noise parameters equal to x, sampling frequency equal to y, false-negative rate equal to z, and n distinct clones
 	▪	Karen-C2_x-y-z-n —> runs the comparative study 2 with measurement noise parameters equal to x, sampling frequency equal to y, false-negative rate equal to z, and n distinct clones
@@ -28,4 +28,4 @@ The R code can be found in the *source* folder of the *master* branch. To reprod
 	▪	Karen-RM-Y.sh —> runs Karen to fit model Y on clonal tracking data from the rhesus macaque study.
 	▪	Karen-CT-X-Y.sh —> runs Karen to fit model Y on clonal tracking data from the gene therapy clinical trial X.
 
-
+Each .sh file runs a specific .R file, whose code can be found in the source folder of the master branch.
