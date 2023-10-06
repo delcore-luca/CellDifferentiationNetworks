@@ -28,4 +28,4 @@ The *.sh* files can be found in the main folder of the *master* branch. The synt
 	▪	Karen-RM-Y.sh —> runs Karen to fit model Y on clonal tracking data from the rhesus macaque study.
 	▪	Karen-CT-X-Y.sh —> runs Karen to fit model Y on clonal tracking data from the gene therapy clinical trial X.
 
-Each .sh file runs a specific .R file, whose code can be found in the source folder of the master branch.
+Each *.sh* file runs a specific *.R* file, whose code can be found in the *source* folder of the *master* branch.
