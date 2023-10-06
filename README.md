@@ -1,5 +1,5 @@
 # CellDifferentiationNetworks
-This repository includes the R code that supports the results of the article "*Scalable inference of cell differentiation networks in gene therapy clonal tracking studies of haematopoiesis*", https://doi.org/10.1093/bioinformatics/btad605 .
+This repository includes the R code that supports the findings of the article "*Scalable inference of cell differentiation networks in gene therapy clonal tracking studies of haematopoiesis*", https://doi.org/10.1093/bioinformatics/btad605 .
 
 The R code can be found in the *source* folder of the *master* branch. To reproduce the results reported in the paper it is sufficient to run all the *.sh* files of the *master* branch.The syntax of the sh file names is explained as follows.
 
