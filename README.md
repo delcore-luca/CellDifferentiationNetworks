@@ -16,6 +16,7 @@ To reproduce the figures and findings of our paper, it is sufficient to run all 
 ```bash
 sbatch ./FILE_NAME.sh
 ```
+after navigating to the main folder containing all the *.sh* files.
 
 The syntax of the sh file names is explained as follows.
 
