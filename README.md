@@ -11,14 +11,13 @@ install.packages("Karen")
 The package includes the datasets being analysed in the paper.
 Furthermore, the vignette file https://cran.r-project.org/web/packages/Karen/vignettes/Karen.pdf includes executable examples that allow the user to apply our method to their own clonal tracking datasets.
 
-To reproduce the figures and findings of our paper, it is sufficient to run all the *.sh* files of the *master* branch by using the bash command
+To reproduce the figures and findings of our paper, it is sufficient to navigate to the main folder containing all the *.sh* files, and run all the *.sh* files by using the bash command
 
 ```bash
 sbatch ./FILE_NAME.sh
 ```
-after navigating to the main folder containing all the *.sh* files.
 
-The syntax of the sh file names is explained as follows.
+The *.sh* files can be found in the main folder of the *master* branch. The syntax of the *.sh* file names is explained as follows.
 
 	▪	Karen-C1_x-y-z-n —> runs the comparative study 1 with measurement noise parameters equal to x, sampling frequency equal to y, false-negative rate equal to z, and n distinct clones
 	▪	Karen-C2_x-y-z-n —> runs the comparative study 2 with measurement noise parameters equal to x, sampling frequency equal to y, false-negative rate equal to z, and n distinct clones
